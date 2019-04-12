@@ -103,17 +103,29 @@ GetWindow			=	ctypes.windll.user32.GetWindow
 ShowWindow			= 	ctypes.windll.user32.ShowWindow
 GetWindowContextHelpId =	ctypes.windll.user32.GetWindowContextHelpId
 GetWindowLong		=	ctypes.windll.user32.GetWindowLongW
+GetWindowLong.argtypes = [wintypes.HWND, ctypes.c_int]
+GetWindowLong.restype = wintypes.LONG
 GetWindowPlacement  =   ctypes.windll.user32.GetWindowPlacement
 GetWindowRect		=	ctypes.windll.user32.GetWindowRect
 GetWindowText		=	ctypes.windll.user32.GetWindowTextW
 GetWindowTextLength	=	ctypes.windll.user32.GetWindowTextLengthW
 GetClassName        =   ctypes.windll.user32.GetClassNameW
+GetClassName.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+GetClassName.restype = ctypes.c_int
 GetClientRect       =   ctypes.windll.user32.GetClientRect
 IsChild				=	ctypes.windll.user32.IsChild
 IsWindow 			=	ctypes.windll.user32.IsWindow
+IsWindow.argtypes = [wintypes.HWND]
+IsWindow.restype = wintypes.BOOL
 IsWindowUnicode		=	ctypes.windll.user32.IsWindowUnicode
+IsWindowUnicode.argtypes = [wintypes.HWND]
+IsWindowUnicode.restype = wintypes.BOOL
 IsWindowVisible		=	ctypes.windll.user32.IsWindowVisible
+IsWindowVisible.argtypes = [wintypes.HWND]
+IsWindowVisible.restype = wintypes.BOOL
 IsWindowEnabled		=	ctypes.windll.user32.IsWindowEnabled
+IsWindowEnabled.argtypes = [wintypes.HWND]
+IsWindowEnabled.restype = wintypes.BOOL
 ClientToScreen      =   ctypes.windll.user32.ClientToScreen
 ScreenToClient      =   ctypes.windll.user32.ScreenToClient
 
@@ -121,8 +133,8 @@ GetCurrentThreadId  =   ctypes.windll.Kernel32.GetCurrentThreadId
 GetWindowThreadProcessId =  ctypes.windll.user32.GetWindowThreadProcessId
 GetGUIThreadInfo    =   ctypes.windll.user32.GetGUIThreadInfo
 AttachThreadInput   =   ctypes.windll.user32.AttachThreadInput
-AttachThreadInput.restype = win32structures.BOOL
-AttachThreadInput.argtypes = [win32structures.DWORD, win32structures.DWORD, win32structures.BOOL]
+AttachThreadInput.restype = wintypes.BOOL
+AttachThreadInput.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.BOOL]
 #GetWindowThreadProcessId    =   ctypes.windll.user32.GetWindowThreadProcessId
 GetLastError = ctypes.windll.kernel32.GetLastError
 
@@ -138,11 +150,20 @@ GlobalLock = ctypes.windll.kernel32.GlobalLock
 GlobalUnlock = ctypes.windll.kernel32.GlobalUnlock
 
 SendMessage			=	ctypes.windll.user32.SendMessageW
+SendMessage.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM,
+                        wintypes.LPVOID]
+SendMessage.restype = wintypes.LPARAM
+
 SendMessageTimeout  =   ctypes.windll.user32.SendMessageTimeoutW
+SendMessageTimeout.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM,
+                               wintypes.LPARAM, wintypes.UINT, wintypes.UINT,
+                               win32structures.PDWORD_PTR]
+SendMessageTimeout.restype = wintypes.LPARAM
 SendMessageA		=	ctypes.windll.user32.SendMessageA
 PostMessage			=	ctypes.windll.user32.PostMessageW
 GetMessage          =   ctypes.windll.user32.GetMessageW
 RegisterWindowMessage = ctypes.windll.user32.RegisterWindowMessageW
+RegisterWindowMessage.restype = UINT
 
 MoveWindow          =   ctypes.windll.user32.MoveWindow
 EnableWindow        =   ctypes.windll.user32.EnableWindow
@@ -154,8 +175,8 @@ GetForegroundWindow	=	ctypes.windll.user32.GetForegroundWindow
 SetWindowLong		=	ctypes.windll.user32.SetWindowLongW
 try:
     SetWindowLongPtr    =   ctypes.windll.user32.SetWindowLongPtrW
-    SetWindowLongPtr.argtypes = [win32structures.HWND, ctypes.c_int, win32structures.LONG_PTR]
-    SetWindowLongPtr.restype = win32structures.LONG_PTR
+    SetWindowLongPtr.argtypes = [wintypes.HWND, ctypes.c_int, wintypes.LONG_PTR]
+    SetWindowLongPtr.restype = wintypes.LONG_PTR
 except AttributeError:
     SetWindowLongPtr = SetWindowLong
 SystemParametersInfo =	ctypes.windll.user32.SystemParametersInfoW
@@ -185,8 +206,8 @@ WaitForSingleObject = ctypes.windll.kernel32.WaitForSingleObject
 WaitForInputIdle	= ctypes.windll.user32.WaitForInputIdle
 
 IsHungAppWindow     = ctypes.windll.user32.IsHungAppWindow
-IsHungAppWindow.restype = win32structures.BOOL
-IsHungAppWindow.argtypes = [win32structures.HWND]
+IsHungAppWindow.restype = wintypes.BOOL
+IsHungAppWindow.argtypes = [wintypes.HWND]
 
 GetModuleFileNameEx = ctypes.windll.psapi.GetModuleFileNameExW
 

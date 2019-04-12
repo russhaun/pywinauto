@@ -41,6 +41,7 @@ import win32process
 import win32api
 import win32con
 import win32gui
+import pywintypes
 
 from . import win32functions
 from . import win32defines
@@ -56,11 +57,13 @@ def text(handle):
         return 'Default IME'
     if class_name == 'MSCTFIME UI':
         return 'M'
+    if class_name is None:
+        return None
     #length = win32functions.SendMessage(handle, win32defines.WM_GETTEXTLENGTH, 0, 0)
 
     # XXX: there are some very rare cases when WM_GETTEXTLENGTH hangs!
     # WM_GETTEXTLENGTH may hang even for notepad.exe main window!
-    c_length = win32structures.DWORD(0)
+    c_length = win32structures.DWORD_PTR(0)
     result = win32functions.SendMessageTimeout(
         handle,
         win32defines.WM_GETTEXTLENGTH,
@@ -96,8 +99,10 @@ def text(handle):
 #=========================================================================
 def classname(handle):
     """Return the class name of the window"""
-    class_name = (ctypes.c_wchar * 257)()
-    win32functions.GetClassName(handle, ctypes.byref(class_name), 256)
+    if handle is None:
+        return None
+    class_name = ctypes.create_unicode_buffer(u"", 257)
+    win32functions.GetClassName(handle, class_name, 256)
     return class_name.value
 
 
@@ -140,25 +145,25 @@ def contexthelpid(handle):
 #=========================================================================
 def iswindow(handle):
     """Return True if the handle is a window"""
-    return bool(win32functions.IsWindow(handle))
+    return False if handle is None else bool(win32functions.IsWindow(handle))
 
 
 #=========================================================================
 def isvisible(handle):
     """Return True if the window is visible"""
-    return bool(win32functions.IsWindowVisible(handle))
+    return False if handle is None else bool(win32functions.IsWindowVisible(handle))
 
 
 #=========================================================================
 def isunicode(handle):
     """Return True if the window is a Unicode window"""
-    return bool(win32functions.IsWindowUnicode(handle))
+    return False if handle is None else bool(win32functions.IsWindowUnicode(handle))
 
 
 #=========================================================================
 def isenabled(handle):
     """Return True if the window is enabled"""
-    return bool(win32functions.IsWindowEnabled(handle))
+    return False if handle is None else bool(win32functions.IsWindowEnabled(handle))
 
 
 #=========================================================================
@@ -187,8 +192,8 @@ def is64bitbinary(filename):
         binary_type = win32file.GetBinaryType(filename)
         return binary_type != win32file.SCS_32BIT_BINARY
     except Exception as exc:
-        warnings.warn('Cannot get binary type for file "{}". Error: {}' \
-            ''.format(filename, exc), RuntimeWarning, stacklevel=2)
+        warnings.warn('Cannot get binary type for file "{}". Error: {}'
+                      .format(filename, exc), RuntimeWarning, stacklevel=2)
         return None
 
 
@@ -204,13 +209,18 @@ def clientrect(handle):
 def rectangle(handle):
     """Return the rectangle of the window"""
     # GetWindowRect returns 4-tuple
-    return win32structures.RECT(*win32gui.GetWindowRect(handle))
+    try:
+        return win32structures.RECT(*win32gui.GetWindowRect(handle))
+    except pywintypes.error:
+        return win32structures.RECT()
 
 
 #=========================================================================
 def font(handle):
     """Return the font as a LOGFONTW of the window"""
     # get the font handle
+    if handle is None:
+        handle = 0  # make sure we don't pass window handle down as None
     font_handle = win32functions.SendMessage(
         handle, win32defines.WM_GETFONT, 0, 0)
 

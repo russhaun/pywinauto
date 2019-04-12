@@ -632,7 +632,7 @@ class _listview_item(object):
         #    raise ctypes.WinError()
         del new_remote_mem
 
-        win32functions.WaitGuiThreadIdle(self.listview_ctrl)
+        win32functions.WaitGuiThreadIdle(self.listview_ctrl.handle)
         time.sleep(Timings.after_listviewselect_wait)
 
     #-----------------------------------------------------------
@@ -773,7 +773,7 @@ class ListViewWrapper(hwndwrapper.HwndWrapper):
     def column_count(self):
         """Return the number of columns"""
         if self.get_header_control() is not None:
-            return self.get_header_control().ItemCount()
+            return self.get_header_control().item_count()
         return 0
     # Non PEP-8 alias
     ColumnCount = deprecated(column_count)
@@ -919,7 +919,7 @@ class ListViewWrapper(hwndwrapper.HwndWrapper):
     def texts(self):
         """Get the texts for the ListView control"""
         texts = [self.window_text()]
-        texts.extend([item['text'] for item in self.items()])
+        texts.extend([item.text() for item in self.items()])
         return texts
 
     #-----------------------------------------------------------
@@ -1368,7 +1368,7 @@ class _treeview_element(object):
             win32defines.TVM_ENSUREVISIBLE,
             win32defines.TVGN_CARET,
             self.elem)
-        win32functions.WaitGuiThreadIdle(self.tree_ctrl)
+        win32functions.WaitGuiThreadIdle(self.tree_ctrl.handle)
         return self
     # Non PEP-8 alias
     EnsureVisible = deprecated(ensure_visible)
@@ -1519,7 +1519,7 @@ class TreeViewWrapper(hwndwrapper.HwndWrapper):
         while cur_elem:
             roots.append(cur_elem)
 
-            cur_elem = cur_elem.Next()
+            cur_elem = cur_elem.next_item()
 
         return roots
     # Non PEP-8 alias
@@ -1647,7 +1647,7 @@ class TreeViewWrapper(hwndwrapper.HwndWrapper):
         if retval != win32defines.TRUE:
             raise ctypes.WinError()
 
-        #win32functions.WaitGuiThreadIdle(self)
+        #win32functions.WaitGuiThreadIdle(self.handle)
         #time.sleep(Timings.after_treeviewselect_wait)
     # Non PEP-8 alias
     Select = deprecated(select)
@@ -1656,7 +1656,7 @@ class TreeViewWrapper(hwndwrapper.HwndWrapper):
     def is_selected(self, path):
         """Return True if the item is selected"""
         return win32defines.TVIS_SELECTED == (win32defines.TVIS_SELECTED &
-                                              self.get_item(path).State())
+                                              self.get_item(path).state())
     # Non PEP-8 alias
     IsSelected = deprecated(is_selected)
 
@@ -2255,7 +2255,7 @@ class TabControlWrapper(hwndwrapper.HwndWrapper):
         else:
             self.send_message(win32defines.TCM_SETCURFOCUS, tab)
 
-        win32functions.WaitGuiThreadIdle(self)
+        win32functions.WaitGuiThreadIdle(self.handle)
         time.sleep(Timings.after_tabselect_wait)
         self.actions.log('Selected tab "' + str(logging_tab) + '"')
 
@@ -2317,7 +2317,7 @@ class _toolbar_button(object):
 #        # Notify the parent that we are finished selecting
 #        #self.toolbar_ctrl.notify_parent(win32defines.TBN_TOOLBARCHANGE)
 #
-#        win32functions.WaitGuiThreadIdle(self.toolbar_ctrl)
+#        win32functions.WaitGuiThreadIdle(self.toolbar_ctrl.handle)
 #        time.sleep(Timings.after_toobarpressbutton_wait)
 #    # Non PEP-8 alias
 #    Press = deprecated(press)
@@ -2345,7 +2345,7 @@ class _toolbar_button(object):
 #        # Notify the parent that we are finished selecting
 #        #self.toolbar_ctrl.notify_parent(win32defines.TBN_TOOLBARCHANGE)
 #
-#        win32functions.WaitGuiThreadIdle(self.toolbar_ctrl)
+#        win32functions.WaitGuiThreadIdle(self.toolbar_ctrl.handle)
 #        time.sleep(Timings.after_toobarpressbutton_wait)
 #
 #    #----------------------------------------------------------------
@@ -2447,6 +2447,7 @@ class ToolbarWrapper(hwndwrapper.HwndWrapper):
     friendlyclassname = "Toolbar"
     windowclasses = [
         "ToolbarWindow32",
+        "TToolBar",
         r"WindowsForms\d*\.ToolbarWindow32\..*",
         "Afx:ToolBar:.*"]
 
@@ -2774,12 +2775,13 @@ class ToolbarWrapper(hwndwrapper.HwndWrapper):
         #app = Application().Connect(handle=self.handle)
 
         current_toolbar = self
+        current_toolbar.set_focus() # to make sure it can be clicked immediately
         for i, index in enumerate(indices):
-            windows_before = app.Windows_(visible_only=True)
+            windows_before = app.windows(visible_only=True)
             current_toolbar.button(index).click_input()
             if i < len(indices) - 1:
-                wait_until(5, 0.1, lambda: len(app.Windows_(visible_only=True)) > len(windows_before))
-                windows_after = app.Windows_(visible_only=True)
+                wait_until(5, 0.1, lambda: len(app.windows(visible_only=True)) > len(windows_before))
+                windows_after = app.windows(visible_only=True)
                 new_window = set(windows_after) - set(windows_before)
                 current_toolbar = list(new_window)[0].children()[0]
         self.actions.logSectionEnd()
@@ -3144,13 +3146,13 @@ class UpDownWrapper(hwndwrapper.HwndWrapper):
     def set_value(self, new_pos):
         """Set the value of the of the UpDown control to some integer value"""
         for _ in range(3):
-            result = ctypes.c_long()
+            result = win32structures.DWORD_PTR(0)
             win32functions.SendMessageTimeout(self,
                 win32defines.UDM_SETPOS, 0, win32functions.MakeLong(0, new_pos),
                 win32defines.SMTO_NORMAL,
                 int(Timings.after_updownchange_wait * 1000),
                 ctypes.byref(result))
-            win32functions.WaitGuiThreadIdle(self)
+            win32functions.WaitGuiThreadIdle(self.handle)
             time.sleep(Timings.after_updownchange_wait)
             if self.get_value() == new_pos:
                 break
@@ -3167,7 +3169,7 @@ class UpDownWrapper(hwndwrapper.HwndWrapper):
         self.click_input(coords=(rect.left + 5, rect.top + 5))
 
         #self.set_value(self.get_value() + 1)
-        #win32functions.WaitGuiThreadIdle(self)
+        #win32functions.WaitGuiThreadIdle(self.handle)
         #time.sleep(Timings.after_updownchange_wait)
     # Non PEP-8 alias
     Increment = deprecated(increment)
@@ -3179,7 +3181,7 @@ class UpDownWrapper(hwndwrapper.HwndWrapper):
         self.click_input(coords=(rect.left + 5, rect.bottom - 5))
 
         #self.set_value(self.get_value() - 1)
-        #win32functions.WaitGuiThreadIdle(self)
+        #win32functions.WaitGuiThreadIdle(self.handle)
         #time.sleep(Timings.after_updownchange_wait)
     # Non PEP-8 alias
     Decrement = deprecated(decrement)
@@ -3354,7 +3356,7 @@ class DateTimePickerWrapper(hwndwrapper.HwndWrapper):
 
     #----------------------------------------------------------------
     def set_time(self, year=0, month=0, day_of_week=0, day=0, hour=0, minute=0, second=0, milliseconds=0):
-        """Get the currently selected time"""
+        """Set the currently selected time"""
         remote_mem = RemoteMemoryBlock(self)
         system_time = win32structures.SYSTEMTIME()
 
